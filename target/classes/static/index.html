@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Atividade 3 - Projetos</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            color: rgb(34, 34, 172);
+        }
+
+        header {
+            background-color: rgb(34, 34, 172);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        main {
+            width: 80%;
+            margin: 30px auto;
+        }
+
+        section {
+            background-color: white;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-radius: 8px;
+        }
+
+        h2 {
+            color: rgb(34, 34, 172);
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #2864dc;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin-top: 15px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .projeto {
+            background-color: #f4f6f9;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 5px;
+        }
+
+        #mensagem {
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>Atividade 3</h1>
+        <p>Sistema de Controle de Projetos</p>
+    </header>
+
+    <main>
+
+        <section>
+            <h2>Cadastrar Projeto</h2>
+
+            <div id="mensagem"></div>
+
+            <form id="formProjeto">
+
+                <label for="descricao">Descrição:</label>
+                <input type="text" id="descricao" required>
+
+                <label for="dataInicio">Data de início:</label>
+                <input type="date" id="dataInicio" required>
+
+                <label for="dataFim">Data de término:</label>
+                <input type="date" id="dataFim" required>
+
+                <button type="submit">Cadastrar Projeto</button>
+
+            </form>
+        </section>
+
+        <section>
+            <h2>Projetos Cadastrados</h2>
+
+            <button type="button" onclick="listarProjetos()">
+                Atualizar Lista
+            </button>
+
+            <div id="listaProjetos"></div>
+        </section>
+
+    </main>
+
+    <script>
+        const endereco = "/api/projetos";
+
+        async function listarProjetos() {
+            const lista = document.getElementById("listaProjetos");
+
+            try {
+                const resposta = await fetch(endereco);
+
+                if (!resposta.ok) {
+                    throw new Error("Erro ao buscar projetos.");
+                }
+
+                const projetos = await resposta.json();
+
+                lista.innerHTML = "";
+
+                if (projetos.length === 0) {
+                    lista.textContent = "Nenhum projeto cadastrado.";
+                    return;
+                }
+
+                projetos.forEach(function(projeto) {
+                    const div = document.createElement("div");
+                    div.className = "projeto";
+
+                    const titulo = document.createElement("h3");
+                    titulo.textContent = projeto.descricao;
+                    div.appendChild(titulo);
+
+                    const inicio = document.createElement("p");
+                    inicio.textContent = "Início: " +
+                        projeto.dataInicio.split("-").reverse().join("/");
+                    div.appendChild(inicio);
+
+                    const fim = document.createElement("p");
+                    fim.textContent = "Término: " +
+                        projeto.dataFim.split("-").reverse().join("/");
+                    div.appendChild(fim);
+
+                    lista.appendChild(div);
+                });
+
+            } catch (erro) {
+                lista.textContent = "Não foi possível carregar os projetos.";
+            }
+        }
+
+        document.getElementById("formProjeto")
+            .addEventListener("submit", async function(evento) {
+
+                evento.preventDefault();
+
+                const projeto = {
+                    descricao: document.getElementById("descricao").value,
+                    dataInicio: document.getElementById("dataInicio").value,
+                    dataFim: document.getElementById("dataFim").value
+                };
+
+                const mensagem = document.getElementById("mensagem");
+
+                if (projeto.dataFim < projeto.dataInicio) {
+                    mensagem.textContent =
+                        "A data de término não pode ser anterior à data de início.";
+                    mensagem.style.color = "red";
+                    return;
+                }
+
+                try {
+                    const resposta = await fetch(endereco, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify(projeto)
+                    });
+
+                    if (!resposta.ok) {
+                        const erro = await resposta.json();
+
+                        throw new Error(
+                            erro.errors
+                                ? erro.errors.join(" ")
+                                : "Erro ao cadastrar projeto."
+                        );
+                    }
+
+                    mensagem.textContent = "Projeto cadastrado com sucesso!";
+                    mensagem.style.color = "green";
+
+                    document.getElementById("formProjeto").reset();
+
+                    listarProjetos();
+
+                } catch (erro) {
+                    mensagem.textContent = erro.message;
+                    mensagem.style.color = "red";
+                }
+            });
+
+        listarProjetos();
+    </script>
+
+</body>
+</html>
